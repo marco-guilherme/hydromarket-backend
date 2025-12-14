@@ -1,7 +1,7 @@
 package br.com.hydromarket.controllers;
 
 import br.com.hydromarket.dtos.whatsapp.webhook.WhatsAppWebhookDTO;
-import br.com.hydromarket.services.WhatsAppFlow;
+import br.com.hydromarket.services.WhatsAppService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,17 +10,17 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @Slf4j
 public class WhatsAppWebhook {
-    private final WhatsAppFlow whatsAppFlow;
+    private final WhatsAppService whatsAppService;
 
-    public WhatsAppWebhook(WhatsAppFlow whatsAppFlow) {
-        this.whatsAppFlow = whatsAppFlow;
+    public WhatsAppWebhook(WhatsAppService whatsAppService) {
+        this.whatsAppService = whatsAppService;
     }
 
     @PostMapping("/")
     public ResponseEntity<Void> messageReceived(@RequestBody WhatsAppWebhookDTO body) {
         log.debug("Messages webhook called");
 
-        this.whatsAppFlow.messageReceived(body);
+        this.whatsAppService.messageReceived(body);
 
         return ResponseEntity.ok().build();
     }
@@ -33,7 +33,7 @@ public class WhatsAppWebhook {
     ) {
         log.info("Webhook verification (subscribe)");
 
-        if(this.whatsAppFlow.isVerifyTokenCorrect(mode, verifyToken)) {
+        if(this.whatsAppService.isVerifyTokenCorrect(mode, verifyToken)) {
             return ResponseEntity.ok(challenge);
         }
 
