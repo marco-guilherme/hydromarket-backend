@@ -1,6 +1,7 @@
 package br.com.hydromarket.services;
 
 import br.com.hydromarket.components.WhatsAppProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.springframework.web.client.RestClient;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class WhatsAppService {
     private final RestClient restClient;
     private final WhatsAppProperties whatsAppProperties;
@@ -28,6 +30,8 @@ public class WhatsAppService {
                         "body", message
                 )
         );
+
+        log.info("Sending message to {}", toTelephoneNumber);
 
         restClient.post()
                 .uri(this.whatsAppProperties.getSendMessageEndpoint())

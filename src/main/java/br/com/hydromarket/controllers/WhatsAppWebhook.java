@@ -1,23 +1,26 @@
 package br.com.hydromarket.controllers;
 
-import br.com.hydromarket.components.WhatsAppProperties;
+import br.com.hydromarket.dtos.whatsapp.webhook.WhatsAppWebhookDTO;
+import br.com.hydromarket.services.WhatsAppFlow;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
+@Slf4j
 public class WhatsAppWebhook {
-    private final WhatsAppProperties whatsAppProperties;
+    private final WhatsAppFlow whatsAppFlow;
 
-    public WhatsAppWebhook(WhatsAppProperties whatsAppProperties) {
-        this.whatsAppProperties = whatsAppProperties;
+    public WhatsAppWebhook(WhatsAppFlow whatsAppFlow) {
+        this.whatsAppFlow = whatsAppFlow;
     }
 
     @PostMapping("/")
-    public ResponseEntity<Void> messageReceived(@RequestBody(required = false) Map<String, Object> body) {
-        System.out.println("BODY " + body);
+    public ResponseEntity<Void> messageReceived(@RequestBody WhatsAppWebhookDTO body) {
+        log.debug("Messages webhook called");
+
+        this.whatsAppFlow.messageReceived(body);
 
         return ResponseEntity.ok().build();
     }
@@ -28,9 +31,13 @@ public class WhatsAppWebhook {
             @RequestParam("hub.challenge") String challenge,
             @RequestParam("hub.verify_token") String verifyToken
     ) {
-        if("subscribe".equals(mode) && this.whatsAppProperties.getVerifyToken().equals(verifyToken)) {
+        log.info("Webhook verification (subscribe)");
+
+        if(this.whatsAppFlow.isVerifyTokenCorrect(mode, verifyToken)) {
             return ResponseEntity.ok(challenge);
         }
+
+        log.error("Webhook verification failed");
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }

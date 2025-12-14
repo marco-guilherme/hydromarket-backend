@@ -14,8 +14,6 @@ public class TestController {
 
     @PostMapping("/send")
     public void sendMessage() {
-        System.out.println("SEND MESSAGE");
-
         whatsAppService.sendMessage("5516993482561", "lorem ipsum dolor sit amet");
     }
 }
