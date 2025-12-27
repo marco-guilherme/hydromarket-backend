@@ -11,24 +11,27 @@
 	</parent>
 
 	<groupId>br.com</groupId>
-
 	<artifactId>hydromarket</artifactId>
-
 	<version>0.0.1-SNAPSHOT</version>
-
 	<name>HydroMarket</name>
-
 	<description>Backend do programa de gerenciamento de vendas dos produtos hidropônicos.</description>
-
 	<url/>
 
 	<licenses>
 		<license/>
 	</licenses>
 
-	<developers>
-		<developer/>
-	</developers>
+    <developers>
+        <developer>
+            <id>marco-guilherme</id>
+            <name>Marco Guilherme</name>
+            <email>marcoguilhermepereira@outlook.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>America/Sao_Paulo</timezone>
+        </developer>
+    </developers>
 
 	<scm>
 		<connection/>
@@ -37,20 +40,16 @@
 		<url/>
 	</scm>
 
-	<properties>
-		<java.version>25</java.version>
-	</properties>
+    <properties>
+        <java.version>25</java.version>
+        <jooq.version>3.20.10</jooq.version>
+    </properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -59,9 +58,63 @@
 		</dependency>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <!-- jOOQ -->
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>${jooq.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq-meta</artifactId>
+            <version>${jooq.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq-codegen</artifactId>
+            <version>${jooq.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jooq</artifactId>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-starter-jooq-test</artifactId>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
+
+        <!-- PostgreSQL -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Flyway -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 	</dependencies>
 
@@ -69,7 +122,6 @@
 		<plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-
                 <artifactId>maven-compiler-plugin</artifactId>
 
                 <configuration>
@@ -84,7 +136,6 @@
 
             <plugin>
                 <groupId>org.springframework.boot</groupId>
-
                 <artifactId>spring-boot-maven-plugin</artifactId>
 
                 <configuration>
@@ -94,6 +145,66 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq-codegen-maven</artifactId>
+                <version>${jooq.version}</version>
+
+                <executions>
+                    <execution>
+                        <id>generate-jooq</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <jdbc>
+                        <driver>org.postgresql.Driver</driver>
+                        <url>${database.url}</url>
+                        <user>${database.user}</user>
+                        <password>${database.password}</password>
+                    </jdbc>
+
+                    <generator>
+                        <database>
+                            <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                            <inputSchema>hydromarket</inputSchema>
+                        </database>
+
+                        <generate>
+                            <pojos>true</pojos>
+                            <records>true</records>
+                        </generate>
+
+                        <target>
+                            <packageName>br.com.hydromarket.jooq.generated</packageName>
+                            <directory>
+                                ${project.build.directory}/generated-sources/jooq
+                            </directory>
+                        </target>
+                    </generator>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+
+                <configuration>
+                    <url>${database.url}</url>
+                    <user>${database.user}</user>
+                    <password>${database.password}</password>
+                    <schemas>
+                        <schema>hydromarket</schema>
+                    </schemas>
+                    <defaultSchema>hydromarket</defaultSchema>
+                    <createSchemas>true</createSchemas>
                 </configuration>
             </plugin>
 		</plugins>
