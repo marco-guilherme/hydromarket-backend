@@ -4,6 +4,8 @@ import br.com.hydromarket.components.WhatsAppProperties;
 import br.com.hydromarket.dtos.whatsapp.webhook.Message;
 import br.com.hydromarket.dtos.whatsapp.webhook.Value;
 import br.com.hydromarket.dtos.whatsapp.webhook.WhatsAppWebhookDTO;
+import br.com.hydromarket.jooq.generated.tables.pojos.ConversationStates;
+import br.com.hydromarket.repository.WhatsAppRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -12,21 +14,19 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
 public class WhatsAppService {
     private final RestClient restClient;
     private final WhatsAppProperties whatsAppProperties;
-    private final Map<String, Map<String, String>> conversationStates;
+    private final WhatsAppRepository whatsAppRepository;
 
-    public WhatsAppService(RestClient.Builder builder, WhatsAppProperties whatsAppProperties) {
+    public WhatsAppService(RestClient.Builder builder, WhatsAppProperties whatsAppProperties, WhatsAppRepository whatsAppRepository) {
         this.restClient = builder.build();
         this.whatsAppProperties = whatsAppProperties;
-        this.conversationStates = new ConcurrentHashMap<>();
+        this.whatsAppRepository = whatsAppRepository;
     }
 
     public boolean isVerifyTokenCorrect(String mode, String verifyToken) {
@@ -85,8 +85,6 @@ public class WhatsAppService {
     }
 
     private void handleMessageReceived(WhatsAppWebhookDTO body) {
-        String currentTimestamp = String.valueOf(Instant.now().toEpochMilli());
-
         String conversationIdentifier = body.entry().getFirst().identifier();
 
         String userWhatsAppNumber = body.entry().getFirst()
@@ -100,24 +98,24 @@ public class WhatsAppService {
                 .value()
                 .messages().getFirst();
 
-        String reply = "TEST";
+        ConversationStates conversationState = this.whatsAppRepository.findConversationStateByConversationIdentifier(conversationIdentifier);
 
-        if(message.type().equals("text")) {
-            reply = message.text().body();
+        if(conversationState == null) {
+            conversationState = new ConversationStates();
+
+            conversationState.setConversationIdentifier(conversationIdentifier);
+            conversationState.setUserTelephoneNumber(userWhatsAppNumber);
+
+            this.whatsAppRepository.insertConversation(conversationState);
+
+            this.sendMessage(userWhatsAppNumber, "Olá! Clique no catálogo, adicione os produtos no carrinho e faça o envio do pedido");
         }
+        else {
+            this.whatsAppRepository.updateUserSentLastMessageTimestampByConversationIdentifier(conversationIdentifier);
 
-        boolean isFirstConversationMessage = !this.conversationStates.containsKey(conversationIdentifier);
-
-        Map<String, String> conversationContext = this.conversationStates.computeIfAbsent(conversationIdentifier, _ -> new ConcurrentHashMap<>());
-
-        conversationContext.put("lastMessageSentByTheUserTimestamp", currentTimestamp);
-        conversationContext.put("userWhatsAppNumber", userWhatsAppNumber);
-        conversationContext.put("reply", reply);
-
-        this.conversationStates.put(conversationIdentifier, conversationContext);
-
-        log.debug("\n\n\n{}\n\n\n", this.conversationStates);
-
-        this.sendMessage(userWhatsAppNumber, isFirstConversationMessage ? "Clique no catálogo" : ">>>>>>>>>: " + reply);
+            if(message.type().equals("order")) {
+                System.out.println("SOLICITAR ENDEREÇO DE ENTREGA");
+            }
+        }
     }
 }
